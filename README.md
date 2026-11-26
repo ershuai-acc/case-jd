@@ -6,7 +6,7 @@
 
 ## 在线预览
 
-推送后由 GitHub Actions 自动发布到 GitHub Pages：
+已通过 GitHub Actions 发布到 GitHub Pages：
 
 ```
 https://ershuai-acc.github.io/case-jd/
