@@ -1,0 +1,834 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>判断一个岗位 · 方法与案例｜作品集</title>
+<meta name="description" content="把「这个岗位值不值得投」做成一套可复用的判断流程：JD 逆向工程、公司尽调、稀缺性定价、匹配打分与 3–5 年推演。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='7' fill='%23A63D2F'/></svg>">
+<style>
+  :root{
+    --paper:#F6F4EF;
+    --paper-2:#FBFAF7;
+    --ink:#16130F;
+    --ink-2:#3C3831;
+    --ink-3:#6B665C;
+    --line:#DAD5CA;
+    --line-2:#E7E2D8;
+    --accent:#A63D2F;
+    --accent-soft:#C97A6C;
+    --serif:"Songti SC","Noto Serif CJK SC","Source Han Serif SC",Georgia,"Times New Roman",serif;
+    --sans:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --mono:"SF Mono","JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+    --max:1180px;
+  }
+
+  *,*::before,*::after{box-sizing:border-box}
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:16px;
+    line-height:1.75;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  ::selection{background:var(--accent);color:var(--paper-2)}
+  a{color:inherit;text-decoration:none}
+  img{max-width:100%}
+
+  /* ---------- 细网格底纹 ---------- */
+  .grain{
+    position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:
+      linear-gradient(to right, rgba(22,19,15,.028) 1px, transparent 1px);
+    background-size:calc((100vw - 2*min(6vw,80px))/12) 100%;
+    mask-image:linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent);
+  }
+
+  .wrap{max-width:var(--max);margin:0 auto;padding:0 clamp(20px,4vw,40px);position:relative;z-index:1}
+
+  /* ---------- 导航 ---------- */
+  .nav{
+    position:fixed;top:0;left:0;right:0;height:58px;z-index:50;
+    display:flex;align-items:center;
+    background:rgba(246,244,239,.82);
+    backdrop-filter:saturate(140%) blur(12px);
+    -webkit-backdrop-filter:saturate(140%) blur(12px);
+    border-bottom:1px solid var(--line-2);
+  }
+  .nav .wrap{display:flex;align-items:center;justify-content:space-between;width:100%}
+  .brand{display:flex;align-items:center;gap:9px;font-family:var(--serif);font-size:15px;letter-spacing:.02em}
+  .brand i{width:6px;height:6px;border-radius:50%;background:var(--accent);display:block}
+  .nav-links{display:flex;gap:26px}
+  .nav-links a{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--ink-3);transition:color .25s;position:relative;padding-bottom:2px;
+  }
+  .nav-links a::after{
+    content:"";position:absolute;left:0;right:100%;bottom:0;height:1px;background:var(--accent);
+    transition:right .3s cubic-bezier(.22,.61,.36,1);
+  }
+  .nav-links a:hover{color:var(--ink)}
+  .nav-links a:hover::after,.nav-links a.on::after{right:0}
+  .nav-links a.on{color:var(--ink)}
+  .nav-idx{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--ink-3)}
+
+  /* ---------- 通用排版 ---------- */
+  .eyebrow{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--accent);display:flex;align-items:center;gap:10px;
+  }
+  .eyebrow::before{content:"";width:22px;height:1px;background:var(--accent);display:block}
+
+  h1,h2,h3{font-family:var(--serif);font-weight:600;letter-spacing:-.01em;margin:0;text-wrap:balance}
+  h1{font-size:clamp(1.95rem,3.55vw,3.2rem);line-height:1.24;letter-spacing:-.03em}
+  .hero h1 span{display:block}
+  h2{font-size:clamp(1.6rem,2.9vw,2.35rem);line-height:1.3}
+  h3{font-size:1.06rem;line-height:1.55;letter-spacing:0}
+
+  p{margin:0;text-wrap:pretty}
+  .lede{font-size:clamp(1rem,1.25vw,1.1rem);line-height:1.95;color:var(--ink-2)}
+  .small{font-size:.86rem;line-height:1.85;color:var(--ink-3)}
+  .mono{font-family:var(--mono);font-size:.78rem;letter-spacing:.04em}
+
+  .rule{height:1px;background:var(--line);border:0;margin:0}
+
+  /* ---------- Hero ---------- */
+  .hero{padding:calc(58px + clamp(64px,10vw,120px)) 0 clamp(56px,7vw,88px);scroll-margin-top:0}
+  .hero-grid{display:grid;grid-template-columns:minmax(0,1fr) 292px;gap:clamp(32px,5vw,72px);align-items:end}
+  .hero h1{margin:26px 0 0}
+  .hero h1 em{font-style:normal;color:var(--accent)}
+  .hero .lede{margin-top:30px;max-width:34em}
+  .hero-foot{display:flex;gap:14px;align-items:center;margin-top:38px;flex-wrap:wrap}
+  .chip{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--ink-3);
+    border:1px solid var(--line);border-radius:999px;padding:5px 12px;background:var(--paper-2);
+  }
+  .meta-col{border-left:1px solid var(--line);padding-left:clamp(18px,2vw,26px)}
+  .meta-col dl{margin:0;display:grid;gap:16px}
+  .meta-col dt{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3);margin-bottom:3px}
+  .meta-col dd{margin:0;font-size:.9rem;line-height:1.5;color:var(--ink-2)}
+  .meta-col dd b{font-weight:600;color:var(--ink)}
+
+  /* ---------- 章节 ---------- */
+  .sec{padding:clamp(64px,8vw,104px) 0;border-top:1px solid var(--line);scroll-margin-top:72px}
+  .sec-head{display:grid;grid-template-columns:78px minmax(0,1fr);gap:clamp(14px,2vw,26px);align-items:start;margin-bottom:clamp(34px,4vw,52px)}
+  .sec-num{
+    font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--accent);
+    padding-top:.55em;display:flex;align-items:center;gap:8px;
+  }
+  .sec-num::after{content:"";flex:1;height:1px;background:var(--line)}
+  .sec-head h2{margin:0}
+  .kicker{margin-top:10px;color:var(--ink-3);font-size:.94rem;max-width:52em;line-height:1.85}
+
+  .grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(20px,3vw,40px)}
+  .grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(16px,2.4vw,30px)}
+  .grid-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(14px,2vw,26px)}
+
+  .card{
+    border:1px solid var(--line);background:var(--paper-2);
+    padding:clamp(20px,2.4vw,30px);position:relative;
+  }
+  .card .tag{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:12px}
+  .card h3{margin-bottom:10px}
+  .card p{font-size:.92rem;line-height:1.8;color:var(--ink-2)}
+
+  .stat{font-family:var(--serif);font-size:clamp(2rem,3.4vw,2.9rem);line-height:1;letter-spacing:-.02em}
+  .stat em{font-style:normal;font-size:.42em;color:var(--ink-3);letter-spacing:0;margin-left:4px}
+
+  /* ---------- 方法步骤 ---------- */
+  .steps{border-top:1px solid var(--line)}
+  .step{
+    display:grid;grid-template-columns:56px minmax(0,1.05fr) minmax(0,1.55fr);gap:clamp(14px,2vw,28px);
+    padding:26px 0;border-bottom:1px solid var(--line-2);align-items:baseline;
+    transition:background .3s;
+  }
+  .step:hover{background:rgba(255,255,255,.5)}
+  .step .n{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.08em;padding-top:.35em}
+  .step h3{font-size:1.02rem}
+  .step .ask{font-size:.88rem;color:var(--ink-3);line-height:1.8;margin-top:7px}
+  .step .ask b{color:var(--ink-2);font-weight:500}
+  .step .desc{font-size:.9rem;color:var(--ink-2);line-height:1.85}
+
+  /* ---------- 稀缺性定价 ---------- */
+  .price-table{width:100%;border-collapse:collapse;margin-top:8px}
+  .price-table th{
+    text-align:left;font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--ink-3);font-weight:400;padding:0 0 12px;border-bottom:1px solid var(--ink)
+  }
+  .price-table td{padding:18px 16px 18px 0;border-bottom:1px solid var(--line-2);vertical-align:top;font-size:.92rem}
+  .price-table td:first-child{font-family:var(--serif);font-size:1.02rem;width:26%}
+  .price-table td:nth-child(2){color:var(--ink-2);width:46%}
+  .price-table th:last-child{text-align:right}
+  .price-table td:last-child{font-family:var(--mono);font-size:.8rem;text-align:right;white-space:nowrap}
+  .yes{color:var(--accent)}
+  .no{color:var(--ink-2)}
+
+  .callout{
+    margin-top:34px;border-left:2px solid var(--accent);padding:4px 0 4px clamp(18px,2.4vw,28px);
+    font-family:var(--serif);font-size:clamp(1.06rem,1.7vw,1.32rem);line-height:1.8;letter-spacing:-.01em;
+  }
+  .callout span{color:var(--ink-3);font-size:.72em;display:block;margin-top:12px;font-family:var(--sans);line-height:1.8;letter-spacing:0}
+
+  /* ---------- 案例对照 ---------- */
+  .compare{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;border:1px solid var(--line);background:var(--paper-2)}
+  .compare>div{padding:clamp(20px,2.6vw,32px)}
+  .compare>div+div{border-left:1px solid var(--line);background:var(--paper)}
+  .compare .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);display:flex;align-items:center;gap:8px;margin-bottom:18px}
+  .compare .lbl i{width:5px;height:5px;border-radius:50%;background:var(--ink-3);display:block}
+  .compare>div+div .lbl{color:var(--accent)}
+  .compare>div+div .lbl i{background:var(--accent)}
+  .compare p{font-size:.94rem;line-height:1.85;color:var(--ink-2)}
+  .compare p+p{margin-top:14px}
+  .compare strong{font-weight:600;color:var(--ink)}
+
+  .decode{margin-top:clamp(28px,3.4vw,44px);display:grid;gap:0;border-top:1px solid var(--line)}
+  .decode-row{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.6fr);gap:clamp(14px,2.4vw,34px);padding:24px 0;border-bottom:1px solid var(--line-2)}
+  .decode-row .q{font-family:var(--serif);font-size:1.06rem;line-height:1.6}
+  .decode-row .q em{display:block;font-style:normal;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-top:8px}
+  .decode-row .a{font-size:.93rem;line-height:1.9;color:var(--ink-2)}
+  .decode-row .a b{color:var(--accent);font-weight:500}
+
+  /* ---------- 结论卡 ---------- */
+  .verdict{
+    margin-top:clamp(36px,4.5vw,56px);border:1px solid var(--ink);background:var(--paper-2);
+    display:grid;grid-template-columns:236px minmax(0,1fr);
+  }
+  .verdict-score{padding:clamp(22px,2.6vw,32px);border-right:1px solid var(--ink);display:flex;flex-direction:column;justify-content:center}
+  .verdict-score .big{font-family:var(--serif);font-size:clamp(3rem,5vw,4.1rem);line-height:.95;letter-spacing:-.03em}
+  .verdict-score .sub{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-top:14px}
+  .verdict-body{padding:clamp(22px,2.6vw,34px)}
+  .verdict-body .line{display:flex;gap:12px;align-items:baseline;font-size:.95rem;line-height:1.85;color:var(--ink-2)}
+  .verdict-body .line+.line{margin-top:11px}
+  .verdict-body .line i{font-family:var(--mono);font-size:10px;color:var(--accent);font-style:normal;flex:none;padding-top:2px}
+  .verdict-body .line b{color:var(--ink);font-weight:600}
+
+  /* ---------- 打分条 ---------- */
+  .bars{margin-top:clamp(30px,3.6vw,46px);display:grid;gap:20px}
+  .bar{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,2.4fr) 54px;gap:clamp(12px,2vw,26px);align-items:center}
+  .bar .name{font-size:.88rem;color:var(--ink-2)}
+  .bar .name small{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--ink-3);margin-top:2px}
+  .track{height:5px;background:var(--line-2);position:relative;overflow:hidden}
+  .fill{position:absolute;inset:0 auto 0 0;width:0;background:var(--ink);transition:width 1.1s cubic-bezier(.22,.61,.36,1)}
+  .fill.low{background:var(--accent)}
+  .bar .val{font-family:var(--mono);font-size:.82rem;text-align:right;color:var(--ink)}
+
+  .note{
+    margin-top:26px;padding:18px 22px;background:rgba(166,61,47,.05);
+    border-left:2px solid var(--accent);font-size:.88rem;line-height:1.85;color:var(--ink-2);
+  }
+  .note b{color:var(--ink);font-weight:600}
+
+  /* ---------- 纪律 ---------- */
+  .grades{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin-top:6px}
+  .grade{background:var(--paper-2);padding:18px 16px}
+  .grade .g{font-family:var(--serif);font-size:1.5rem;line-height:1;color:var(--accent)}
+  .grade .t{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin:8px 0 6px}
+  .grade p{font-size:.82rem;line-height:1.7;color:var(--ink-2)}
+
+  .quote{
+    margin:clamp(34px,4vw,50px) 0 0;padding:clamp(26px,3.4vw,40px);
+    background:var(--ink);color:var(--paper);
+  }
+  .quote p{font-family:var(--serif);font-size:clamp(1.15rem,2vw,1.55rem);line-height:1.75;letter-spacing:-.01em}
+  .quote cite{display:block;margin-top:18px;font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(246,244,239,.5);font-style:normal}
+
+  /* ---------- 双视角 ---------- */
+  .persp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(24px,3.4vw,48px)}
+  .persp .col p{font-size:.94rem;line-height:1.9;color:var(--ink-2)}
+  .persp .col p+p{margin-top:16px}
+  .persp .col .num{font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--accent);margin-bottom:12px;display:block}
+
+  /* ---------- 页脚 ---------- */
+  .foot{border-top:1px solid var(--line);padding:clamp(44px,6vw,72px) 0 54px}
+  .foot-top{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:clamp(28px,4vw,64px);align-items:start}
+  .files{margin:0;padding:0;list-style:none;border-top:1px solid var(--line)}
+  .files li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;padding:13px 0;border-bottom:1px solid var(--line-2);font-size:.88rem;color:var(--ink-2)}
+  .files li span{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+  .foot-bottom{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-top:26px;flex-wrap:wrap}
+  .foot-bottom p{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+  .contact{margin-top:clamp(28px,3.6vw,42px);padding-top:18px;border-top:1px solid var(--line-2);font-size:.84rem;color:var(--ink-3);display:flex;gap:10px;flex-wrap:wrap;align-items:baseline}
+  .contact span{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+  .contact em{font-style:normal;color:var(--ink-2);border-bottom:1px dashed var(--line);padding-bottom:1px}
+
+  /* ---------- 动效 ---------- */
+  .reveal{opacity:0;transform:translateY(16px);transition:opacity .8s cubic-bezier(.22,.61,.36,1),transform .8s cubic-bezier(.22,.61,.36,1)}
+  .reveal.in{opacity:1;transform:none}
+
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    .reveal{opacity:1;transform:none;transition:none}
+    .fill{transition:none}
+  }
+
+  /* ---------- 响应式 ---------- */
+  @media (max-width:980px){
+    .hero-grid{grid-template-columns:1fr;gap:36px}
+    .meta-col{border-left:0;border-top:1px solid var(--line);padding:24px 0 0}
+    .meta-col dl{grid-template-columns:repeat(2,1fr);gap:18px 24px}
+    .sec-head{grid-template-columns:1fr;gap:10px}
+    .sec-num::after{display:none}
+    .grid-3,.grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .step{grid-template-columns:40px minmax(0,1fr);gap:8px 18px}
+    .step .desc{grid-column:2}
+    .verdict{grid-template-columns:1fr}
+    .verdict-score{border-right:0;border-bottom:1px solid var(--ink);flex-direction:row;align-items:baseline;gap:16px}
+    .verdict-score .sub{margin-top:0}
+    .foot-top{grid-template-columns:1fr}
+    .nav-links{display:none}
+  }
+  @media (max-width:700px){
+    .grain{display:none}
+    .grid-2,.grid-3,.grid-4,.compare,.persp{grid-template-columns:1fr}
+    .compare>div+div{border-left:0;border-top:1px solid var(--line)}
+    .decode-row{grid-template-columns:1fr;gap:8px}
+    .bar{grid-template-columns:1fr 44px;gap:8px 14px}
+    .bar .track{grid-column:1/-1;order:3}
+    .bar .val{order:2;text-align:right}
+    .grades{grid-template-columns:repeat(2,1fr)}
+    .meta-col dl{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top"><i></i>判断一个岗位</a>
+    <nav class="nav-links" id="navlinks">
+      <a href="#start">起点</a>
+      <a href="#method">方法</a>
+      <a href="#pricing">机制</a>
+      <a href="#case">案例</a>
+      <a href="#discipline">纪律</a>
+      <a href="#view">视角</a>
+    </nav>
+    <div class="nav-idx">PORTFOLIO / 2026</div>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <div class="eyebrow">Method · Case · Reflection</div>
+        <h1><span>把「这个岗位值不值得投」，</span><span>做成一套<em>可被反驳</em>的判断。</span></h1>
+        <p class="lede">
+          我是一名刚入行的猎头，也是在学 AI 的人。这个作品不展示我认识谁，
+          只展示一件事：面对一份招聘 JD，我如何从 400 字里还原出这家公司卡在哪、
+          会不会为我破例、以及三年后我会变成谁——并且，我如何知道自己判断错了。
+        </p>
+        <div class="hero-foot">
+          <span class="chip">JD 逆向工程</span>
+          <span class="chip">公司尽调</span>
+          <span class="chip">稀缺性定价</span>
+          <span class="chip">匹配打分</span>
+          <span class="chip">3–5 年推演</span>
+        </div>
+      </div>
+      <aside class="meta-col">
+        <dl>
+          <div>
+            <dt>Role</dt>
+            <dd>猎头 / 候选人侧顾问<br>AI 应用学习者</dd>
+          </div>
+          <div>
+            <dt>Built With</dt>
+            <dd>Skill 文件 + 联网检索<br><b>非一次性 Prompt</b></dd>
+          </div>
+          <div>
+            <dt>Output</dt>
+            <dd>方法 14.6 KB<br>评估报告 13,000 字</dd>
+          </div>
+          <div>
+            <dt>Case</dt>
+            <dd>深圳 · 高级软件产品经理<br>惟景三维</dd>
+          </div>
+        </dl>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ 01 起点 ============ -->
+  <section class="sec" id="start">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-num">01</div>
+        <div>
+          <h2>大多数岗位分析，其实没有信息</h2>
+          <p class="kicker">
+            一份 JD 平均 400 字，写它的人通常花 15 分钟。它承载的不是「要求」，
+            是一个组织此刻解不掉的麻烦。而最常见的分析，是把这 400 字复述一遍，再加一句「建议重点准备」。
+          </p>
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <article class="card reveal">
+          <span class="tag">失真 · 一</span>
+          <h3>愿望清单 ≠ 筛选清单</h3>
+          <p>JD 里大约 80% 的条件，不会真的被用来筛人。写「英语流利」的公司，可能只是希望你能看懂文档；写「名校优先」的岗位，最后招的往往不是名校。</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag">失真 · 二</span>
+          <h3>职责 ≠ 日常</h3>
+          <p>写「负责产品规划」的岗位，一周可能有 30% 的时间在陪客户、写标书、救现场的火。职责描述的是岗位的理想形态，不是它的实际形态。</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag">失真 · 三</span>
+          <h3>薪资 ≠ 定位</h3>
+          <p>「25–35K × 14 薪」招「5–10 年 + 英语 + 细分爱好 + 硬件背景」，暴露的不是慷慨，而是预算与野心之间的错位。薪资带宽是最诚实的自我描述。</p>
+        </article>
+      </div>
+
+      <p class="lede reveal" style="margin-top:clamp(34px,4vw,48px);max-width:52em">
+        所以我想做的不是「读懂 JD」，而是<strong style="font-weight:600">逆向工程</strong>：
+        把招聘文案当作一家中型组织在某个特定时刻的投影，从投影反推原件——
+        它缺什么人、急什么、肯为什么让步。
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ 02 方法 ============ -->
+  <section class="sec" id="method">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-num">02</div>
+        <div>
+          <h2>六个动作，从文本走到判断</h2>
+          <p class="kicker">
+            每一步都必须产出一个可以被下一歩使用的东西：字段、证据、时间表、红旗、让步顺序、分数。
+            没有产出的步骤，就是装饰。
+          </p>
+        </div>
+      </div>
+
+      <div class="steps">
+        <div class="step reveal">
+          <div class="n">01</div>
+          <div>
+            <h3>事实层：先抄，再读</h3>
+            <div class="ask"><b>动词分析</b>：写「规划」的是决策岗，写「跟进」的是执行岗。<br><b>缺失项分析</b>：没写的比写了的重要。</div>
+          </div>
+          <div class="desc">
+            把 JD 拆成结构化字段，然后统计动词分布。这份 JD 三条职责里没有一条是「写 PRD、画原型」——
+            于是可以判定：这是一个定方向、背结果的岗位，不是执行层。
+          </div>
+        </div>
+
+        <div class="step reveal">
+          <div class="n">02</div>
+          <div>
+            <h3>公司尽调：不检索就是蒙眼判案</h3>
+            <div class="ask"><b>顺序</b>：官网 → 融资工商 → 创始人 → 同公司在招 → 行业 → 客户与渠道。</div>
+          </div>
+          <div class="desc">
+            不检索的分析，只能复述 JD。检索之后我才发现：这家公司的主业根本不是「激光产品」，
+            而是给车厂做产线自动化检测——这直接改写了岗位的性质。
+          </div>
+        </div>
+
+        <div class="step reveal">
+          <div class="n">03</div>
+          <div>
+            <h3>实况还原：他周一到周五在干什么</h3>
+            <div class="ask"><b>五个切口</b>：真实动作 / KPI 反推 / 组织位置 / 权力边界 / 岗位由来。</div>
+          </div>
+          <div class="desc">
+            给出一张时间分配推测表，再反推考核项。JD 里一个量化词都没有，意味着考核大概率是老板的主观评价——
+            这是需要谈清楚的第一件事。
+          </div>
+        </div>
+
+        <div class="step reveal">
+          <div class="n">04</div>
+          <div>
+            <h3>矛盾检验：不自洽处信息量最大</h3>
+            <div class="ask"><b>四类矛盾</b>：JD 内部 / 阶段与要求 / 薪资与市场 / 要求与稀缺性。</div>
+          </div>
+          <div class="desc">
+            「要独立负责产品线」却只要求「参与过项目」，就是一处典型矛盾：门槛写低是为了扩大投递量，
+            实际筛的是另一套标准。
+          </div>
+        </div>
+
+        <div class="step reveal">
+          <div class="n">05</div>
+          <div>
+            <h3>稀缺性定价：他们会为哪一条让步</h3>
+            <div class="ask"><b>核心规律</b>：越不可培养的越不让步，越可学的越容易让步。</div>
+          </div>
+          <div class="desc">
+            这决定了「我够不够得着」。真正的问题不是「我缺什么」，而是「我缺的那一项，
+            是不是他们最可能放弃的那一项」。
+          </div>
+        </div>
+
+        <div class="step reveal">
+          <div class="n">06</div>
+          <div>
+            <h3>价值推演：三年后我因此变成谁</h3>
+            <div class="ask"><b>四类资产</b>：能力 / 履历 / 期权 / 网络。<b>四类成本</b>：机会 / 时间 / 切换 / 心理。</div>
+          </div>
+          <div class="desc">
+            再叠加三情景（乐观 30% / 基准 50% / 悲观 20%），每个情景都要给出可观察的触发信号，
+            而不是一句「看行业前景」。
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 机制 ============ -->
+  <section class="sec" id="pricing">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-num">03</div>
+        <div>
+          <h2>判断「够不够得着」的真正算法</h2>
+          <p class="kicker">
+            招聘方不是在做最优选择，是在做约束条件下的选择。当条件组合稀缺到招不到人时，
+            他们一定会放弃某一项。预测他们放弃哪一项，比猜测自己够不够格有用得多。
+          </p>
+        </div>
+      </div>
+
+      <table class="price-table reveal">
+        <thead>
+          <tr>
+            <th>条件类型</th>
+            <th>这份 JD 里的例子</th>
+            <th>会让步吗</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>硬门槛</td>
+            <td>英语可作为工作语言；3D / CAD 软件的产品直觉；整机配套软件的全周期节奏感</td>
+            <td class="no">不让</td>
+          </tr>
+          <tr>
+            <td>可培养</td>
+            <td>计量与检测领域知识、激光光学基础、车厂客户资源、学历、具体工具</td>
+            <td class="yes">大概率让</td>
+          </tr>
+          <tr>
+            <td>愿望项</td>
+            <td>「优秀的沟通能力」「较强的逻辑思维」「本科」</td>
+            <td class="yes">摆设</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout reveal">
+        「我缺什么」不是问题，「我缺的那一项，是不是他们最可能放弃的那一项」才是。
+        <span>—— 稀缺性定价的作用，是把「我配不配」这种自我怀疑，换成「他们会在哪一格破例」这种可验证的推测。</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04 案例 ============ -->
+  <section class="sec" id="case">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-num">04</div>
+        <div>
+          <h2>一次检索，改写了整份判断</h2>
+          <p class="kicker">
+            这是方法真正起作用的地方：只看 JD，你会以为这是一家做激光消费品的深圳公司。
+            查了六轮之后，结论完全变了。
+          </p>
+        </div>
+      </div>
+
+      <div class="compare reveal">
+        <div>
+          <div class="lbl"><i></i>只看 JD</div>
+          <p>一家深圳公司，地址在南山某科技大厦，招聘<b>高级软件产品经理</b>，负责「激光产品的整体软件规划」。要求 5–10 年、英语可作工作语言、<b>手办爱好者优先</b>。</p>
+          <p>直觉判断：<strong>这是一家做激光雕刻机或激光打印的消费硬件公司</strong>，产品面向 DIY 玩家，需要一个人把软件体验做好。</p>
+        </div>
+        <div>
+          <div class="lbl"><i></i>检索六轮之后</div>
+          <p>武汉惟景三维，华中科技大学教授 2012 年创办，国家级专精特新「小巨人」，200+ 技术团队。主业是<b>给车厂、电池厂做产线自动化三维检测</b>——客户是宁德时代、宝马、特斯拉。</p>
+          <p>2026 年 2 月刚完成近亿元 Pre-A 及 Pre-A+，小米战投、顺为、小鹏生态基金入局。所谓「激光产品」，是 <b>2025 年 10 月才首发的手持激光扫描仪 VScan M</b>。</p>
+        </div>
+      </div>
+
+      <div class="decode">
+        <div class="decode-row reveal">
+          <div class="q">「手办爱好者优先」<em>Job Requirement · 02</em></div>
+          <div class="a">这不是福利，是承认<b>团队里没人真的懂这类用户</b>。一家做工业计量的公司，想把手持扫描仪从车厂下沉到创作者市场——手办、模型、文创、教育。<b>这句话暴露的是新业务方向，不是招聘偏好。</b></div>
+        </div>
+        <div class="decode-row reveal">
+          <div class="q">「英语可作为工作语言」<em>Job Requirement · 02</em></div>
+          <div class="a">说明<b>出海是主战场</b>，不是加分项。官网中英双站、设备出口欧美、融资用途写明「全球渠道布局」——这个岗位的权重，取决于海外收入占比能走多高。</div>
+        </div>
+        <div class="decode-row reveal">
+          <div class="q">「负责软件产品的实施落地」<em>Job Description · 03</em></div>
+          <div class="a">「实施落地」是工程口吻，不是互联网产品语言。它说明<b>团队基因是项目制</b>：按客户交付、按验收结项。这也解释了为什么整份 JD 里没有出现一个「客户」字——写的人和读的人，都不觉得需要写。</div>
+        </div>
+      </div>
+
+      <div class="verdict reveal">
+        <div class="verdict-score">
+          <div class="big">81.55</div>
+          <div class="sub">Weighted Score / 100</div>
+        </div>
+        <div class="verdict-body">
+          <div class="line"><i>01</i><span><b>建议投，但把它当谈判，不是求职。</b>你手上的筹码比你以为的多：你是目标用户、你有三条 3D 软件线、你能直接做英文访谈——这恰好是这家公司最缺的三样。</span></div>
+          <div class="line"><i>02</i><span><b>软件是它最薄的一环，所以杠杆最大。</b>一家靠产线检测赚钱的公司，2025 年 10 月才首发手持设备，现在招软件产品负责人，是从 0 建体系，不是维护存量。</span></div>
+          <div class="line"><i>03</i><span><b>风险不在能力，在组织。</b>武汉是总部与研发，深圳是新设点。要问清的不是「我能不能干」，而是「深圳有没有路线图决策权」。</span></div>
+        </div>
+      </div>
+
+      <div class="bars" id="bars">
+        <div class="bar">
+          <div class="name">同类硬件配套软件全周期<small>WEIGHT 20%</small></div>
+          <div class="track"><div class="fill" data-w="85"></div></div>
+          <div class="val">85</div>
+        </div>
+        <div class="bar">
+          <div class="name">3D / CAD / 空间交互能力<small>WEIGHT 20%</small></div>
+          <div class="track"><div class="fill" data-w="88"></div></div>
+          <div class="val">88</div>
+        </div>
+        <div class="bar">
+          <div class="name">目标用户身份匹配<small>WEIGHT 20%</small></div>
+          <div class="track"><div class="fill" data-w="95"></div></div>
+          <div class="val">95</div>
+        </div>
+        <div class="bar">
+          <div class="name">出海与英语<small>WEIGHT 15%</small></div>
+          <div class="track"><div class="fill" data-w="88"></div></div>
+          <div class="val">88</div>
+        </div>
+        <div class="bar">
+          <div class="name">0 → 1 定义与落地<small>WEIGHT 10%</small></div>
+          <div class="track"><div class="fill" data-w="80"></div></div>
+          <div class="val">80</div>
+        </div>
+        <div class="bar">
+          <div class="name">计量 / 检测领域知识<small>WEIGHT 15%</small></div>
+          <div class="track"><div class="fill low" data-w="45"></div></div>
+          <div class="val">45</div>
+        </div>
+      </div>
+
+      <div class="note reveal">
+        <b>分数的意义在于它会被推翻。</b>如果「爱好 ≠ 产品判断力」，第四项只能算 70 分，总分掉到 76.5，
+        结论从「强推」变成「可面」。所以我的建议不是「你有爱好所以适合」，
+        而是「你必须把爱好讲成洞察，否则这个分数站不住」。
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 05 纪律 ============ -->
+  <section class="sec" id="discipline">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-num">05</div>
+        <div>
+          <h2>我怎么防止自己胡说</h2>
+          <p class="kicker">
+            一个刚入行的人，最容易犯的错不是不知道，而是「知道得太多」——把推断当事实，把巧合当故事。
+            所以我把「不确定」写进了交付物里。
+          </p>
+        </div>
+      </div>
+
+      <div class="grid-2" style="align-items:start">
+        <div class="reveal">
+          <div class="grades">
+            <div class="grade">
+              <div class="g">A</div>
+              <div class="t">Official</div>
+              <p>官网、工商、公告、财报</p>
+            </div>
+            <div class="grade">
+              <div class="g">B</div>
+              <div class="t">Media</div>
+              <p>权威媒体、创始人访谈</p>
+            </div>
+            <div class="grade">
+              <div class="g">C</div>
+              <div class="t">Report</div>
+              <p>行业报告、自媒体，需交叉验证</p>
+            </div>
+            <div class="grade">
+              <div class="g">D</div>
+              <div class="t">Inference</div>
+              <p>我自己的推断，必须标出</p>
+            </div>
+          </div>
+          <p class="small" style="margin-top:18px">
+            引用第三方市场规模数据时，我会写明「C 级证据、来源相互引用、未交叉验证，仅作量级参考」——
+            因为那类数字经常互相矛盾，而它们最容易被当作结论。
+          </p>
+        </div>
+
+        <div class="reveal">
+          <h3 style="margin-bottom:14px">三条硬规矩</h3>
+          <p class="small" style="color:var(--ink-2);font-size:.92rem;line-height:1.9">
+            <b style="color:var(--ink)">一、查不到就写查不到。</b>报告里专门有一节「未核实项」，列出它会如何影响结论。
+            比如办公地址在某激光公司总部大厦——我只把它当地点信号，明确写「未查到股权关联，不做推断」，
+            不把巧合编成故事。
+          </p>
+          <p class="small" style="color:var(--ink-2);font-size:.92rem;line-height:1.9;margin-top:16px">
+            <b style="color:var(--ink)">二、每个高分推断都要配一个验证问题。</b>推断只值一半，
+            能在面试里用 40 分钟问出答案，才值另一半。
+          </p>
+          <p class="small" style="color:var(--ink-2);font-size:.92rem;line-height:1.9;margin-top:16px">
+            <b style="color:var(--ink)">三、结论必须可反驳。</b>我给自己的报告留了三个「我可能错了」的信号：
+            软件团队其实全在武汉、公司对手办场景毫无准备、薪资给不到 28K——任一成立，81.55 分就该下调。
+          </p>
+        </div>
+      </div>
+
+      <blockquote class="quote reveal">
+        <p>一个不能被反驳的结论，不是一个判断，是一个态度。</p>
+        <cite>On falsifiability in hiring judgement</cite>
+      </blockquote>
+    </div>
+  </section>
+
+  <!-- ============ 06 视角 ============ -->
+  <section class="sec" id="view">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-num">06</div>
+        <div>
+          <h2>两个身份，一个共同的判断</h2>
+          <p class="kicker">
+            同一个方法，从猎头的位置看，和从 AI 学习者的位置看，得到的结论其实是一件事。
+          </p>
+        </div>
+      </div>
+
+      <div class="persp">
+        <div class="col reveal">
+          <span class="num">I · 作为猎头</span>
+          <h3 style="margin-bottom:16px">猎头真正卖的不是简历，是降低双向误判</h3>
+          <p>对候选人，我的价值不是把 JD 复述给他，而是告诉他这份 JD 背后那家公司到底卡在哪、会不会为他破例、三年后他会变成谁。</p>
+          <p>对企业，我的价值是把「我们要一个 5–10 年经验的人」翻译成「你其实缺的是一套软件产品体系，所以你需要的是一个能建体系的人，而不是一个年限够的人」。</p>
+          <p>我还是新人，没有足够的成交案例可以展示。所以我选择公开方法，让别人来检验我的推理，而不是我的头衔。</p>
+        </div>
+        <div class="col reveal">
+          <span class="num">II · 作为 AI 学习者</span>
+          <h3 style="margin-bottom:16px">Skill 不是 Prompt，是把判断流程外化</h3>
+          <p>Prompt 是一次性的，说完就散。Skill 是一份文件：有输入定义、有步骤、有输出模板、有自检清单、有明确的反模式。</p>
+          <p>它逼我把「我觉得该这样」写成「第一步产出字段，第二步产出证据，第三步产出一张时间表」——写不出来的部分，就是我还没想清楚的部分。</p>
+          <p>人机分工也很清楚：AI 负责检索、结构化、穷举矛盾；我负责取舍、设定权重、决定哪一条不能让步。权重是我定的，所以结论由我负责。</p>
+        </div>
+      </div>
+
+      <div class="grid-3" style="margin-top:clamp(34px,4.4vw,54px)">
+        <article class="card reveal">
+          <span class="tag">下一步 · 01</span>
+          <h3>把打分卡做成工具</h3>
+          <p>现在一次只能评一个岗位。下一步是让多个岗位可以并排排序，用同一套权重横向比较，而不是凭感觉选。</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag">下一步 · 02</span>
+          <h3>用真实反馈校准权重</h3>
+          <p>权重目前来自逻辑推演，不来自数据。等积累到足够多的面试结果与 offer 结果，权重应该被现实修正，而不是被我修正。</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag">下一步 · 03</span>
+          <h3>让方法对招聘方也有用</h3>
+          <p>同一套逆向工程，反过来用就是 JD 诊断：哪一句在劝退候选人、哪一条要求和薪资在打架。这是我更想做的方向。</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="foot">
+    <div class="wrap">
+      <div class="foot-top">
+        <div class="reveal">
+          <div class="eyebrow">Closing</div>
+          <p style="font-family:var(--serif);font-size:clamp(1.25rem,2.4vw,1.8rem);line-height:1.65;margin-top:20px;max-width:20em">
+            判断力不应该只留在某个人的脑子里。<br>它应该被写下来，被别人用，被别人推翻。
+          </p>
+        </div>
+        <div class="reveal">
+          <ul class="files">
+            <li><span>Skill</span>jd-fit-analysis · 六步判断流程</li>
+            <li><span>Report</span>惟景三维岗位评估 · 13,000 字</li>
+            <li><span>Case</span>模拟简历 · 10 年 3D 软件产品</li>
+            <li><span>Method</span>事实层 → 尽调 → 还原 → 定价 → 打分 → 推演</li>
+          </ul>
+        </div>
+      </div>
+      <div class="contact">
+        <span>开放交流</span> 欢迎拿一个真实岗位来检验这套方法：<em>[ 邮箱 / 微信 · 待填写 ]</em>
+      </div>
+      <div class="foot-bottom">
+        <p>Portfolio · 2026 · 判断一个岗位</p>
+        <p>Made with method, not vibes.</p>
+      </div>
+    </div>
+  </footer>
+
+</main>
+
+<script>
+(function(){
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* 入场 */
+  var items = document.querySelectorAll('.reveal');
+  if ('IntersectionObserver' in window && !reduce){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if (!e.isIntersecting) return;
+        var el = e.target;
+        var group = el.parentElement ? Array.prototype.indexOf.call(el.parentElement.children, el) : 0;
+        el.style.transitionDelay = Math.min(group * 70, 280) + 'ms';
+        el.classList.add('in');
+        io.unobserve(el);
+      });
+    }, {rootMargin:'0px 0px -12% 0px', threshold:0.12});
+    items.forEach(function(el){ io.observe(el); });
+  } else {
+    items.forEach(function(el){ el.classList.add('in'); });
+  }
+
+  /* 打分条 */
+  var bars = document.getElementById('bars');
+  if (bars){
+    var go = function(){
+      bars.querySelectorAll('.fill').forEach(function(f, i){
+        setTimeout(function(){ f.style.width = f.dataset.w + '%'; }, reduce ? 0 : 180 + i * 90);
+      });
+    };
+    if ('IntersectionObserver' in window && !reduce){
+      var bo = new IntersectionObserver(function(es){
+        es.forEach(function(e){ if (e.isIntersecting){ go(); bo.disconnect(); } });
+      }, {threshold:0.25});
+      bo.observe(bars);
+    } else { go(); }
+  }
+
+  /* 导航高亮 */
+  var links = Array.prototype.slice.call(document.querySelectorAll('#navlinks a'));
+  var secs = links.map(function(a){ return document.querySelector(a.getAttribute('href')); }).filter(Boolean);
+  if ('IntersectionObserver' in window && secs.length){
+    var so = new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if (!e.isIntersecting) return;
+        links.forEach(function(a){ a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id); });
+      });
+    }, {rootMargin:'-45% 0px -50% 0px'});
+    secs.forEach(function(s){ so.observe(s); });
+  }
+})();
+</script>
+</body>
+</html>
